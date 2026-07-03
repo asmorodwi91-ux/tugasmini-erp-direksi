@@ -693,7 +693,7 @@ const _inlineRuntimeConfig = {
     }
   },
   "public": {
-    "apiBase": "http://localhost:8081/api"
+    "apiBase": "https://api.devsise.my.id/api"
   }
 };
 const envOptions = {

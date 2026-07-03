@@ -104,8 +104,18 @@ class AuthController extends Controller
                 'id' => $user->id_user,
                 'nama' => $user->nama,
                 'role' => $user->role->nama_role ?? null,
+                'akses' => $this->aksesMap($user->id_user),
             ],
         ]);
+    }
+
+    // Peta hak akses: nama_modul => level (lihat|ubah|setujui)
+    private function aksesMap(int $idUser): array
+    {
+        return \App\Models\HakAkses::where('id_user', $idUser)
+            ->join('modul', 'hak_akses.id_modul', '=', 'modul.id_modul')
+            ->pluck('level', 'nama_modul')
+            ->toArray();
     }
 
     // POST /api/auth/logout

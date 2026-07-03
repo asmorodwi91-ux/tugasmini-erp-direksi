@@ -8,6 +8,25 @@ use Illuminate\Http\Request;
 
 class BudgetController extends Controller
 {
+    // GET /api/budget/proposals — daftar usulan (menunggu didahulukan)
+    public function index(Request $request)
+    {
+        $rows = UsulanAnggaran::with(['departemen', 'pengaju'])
+            ->orderByRaw("FIELD(status,'menunggu','revisi','approved')")
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($u) => [
+                'id' => $u->id_usulan,
+                'departemen' => $u->departemen->nama_dept ?? null,
+                'periode' => $u->periode,
+                'plafon_diajukan' => $u->plafon_diajukan,
+                'pengaju' => $u->pengaju->nama ?? null,
+                'status' => $u->status,
+            ]);
+
+        return response()->json(['data' => $rows]);
+    }
+
     // POST /api/budget/proposal — ajukan usulan anggaran
     public function store(Request $request)
     {
@@ -28,20 +47,40 @@ class BudgetController extends Controller
         return response()->json(['id' => $usulan->id_usulan, 'status' => 'menunggu'], 201);
     }
 
-    // GET /api/budget/proposal/{id} — detail + pembanding
+    // GET /api/budget/proposal/{id} — detail + pembanding usulan vs realisasi
     public function show(int $id)
     {
-        $u = UsulanAnggaran::with('departemen')->find($id);
+        $u = UsulanAnggaran::with(['departemen', 'pengaju', 'penyetuju', 'rincian'])->find($id);
         if (! $u) {
             return response()->json(['error' => 'usulan_not_found'], 404);
         }
+
+        $rincian = $u->rincian->map(function ($r) {
+            $realisasi = (float) $r->realisasi_lalu;
+            $plafon = (float) $r->plafon_diajukan;
+            $selisih = $realisasi > 0 ? round(($plafon - $realisasi) / $realisasi * 100, 1) : null;
+            return [
+                'pos' => $r->pos_anggaran,
+                'realisasi_lalu' => $realisasi,
+                'plafon_diajukan' => $plafon,
+                'selisih_persen' => $selisih,
+            ];
+        })->values();
+
+        $totalRealisasi = (float) $u->rincian->sum('realisasi_lalu');
 
         return response()->json([
             'id' => $u->id_usulan,
             'departemen' => $u->departemen->nama_dept ?? null,
             'periode' => $u->periode,
             'plafon_diajukan' => $u->plafon_diajukan,
+            'realisasi_lalu' => $totalRealisasi,
+            'pengaju' => $u->pengaju->nama ?? null,
+            'penyetuju' => $u->penyetuju->nama ?? null,
+            'tanggal_pengajuan' => optional($u->created_at)->format('Y-m-d'),
             'status' => $u->status,
+            'catatan' => $u->catatan,
+            'rincian' => $rincian,
         ]);
     }
 

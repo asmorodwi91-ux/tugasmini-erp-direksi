@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // Modul 2 — Approval PO
+    Route::get('/po', [ApprovalController::class, 'index']);
     Route::get('/po/{id}', [ApprovalController::class, 'show']);
     Route::post('/po/{id}/decision', [ApprovalController::class, 'decision']);
 
@@ -41,13 +42,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
 
     // Modul 7 — Hak Akses
+    Route::get('/access/roles', [AccessController::class, 'roles']);
     Route::get('/access/users', [AccessController::class, 'users']);
+    Route::post('/access/users', [AccessController::class, 'store']);
     Route::post('/access/save', [AccessController::class, 'save']);
 
     // Modul 8 — Ekspor
+    Route::get('/export/history', [ExportController::class, 'history']);
     Route::post('/export', [ExportController::class, 'create']);
 
     // Modul 9 — Budget
+    Route::get('/budget/proposals', [BudgetController::class, 'index']);
     Route::post('/budget/proposal', [BudgetController::class, 'store']);
     Route::get('/budget/proposal/{id}', [BudgetController::class, 'show']);
     Route::post('/budget/decision', [BudgetController::class, 'decision']);

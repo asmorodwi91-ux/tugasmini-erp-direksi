@@ -2,8 +2,8 @@
 definePageMeta({ layout: 'auth' })
 const { login, verifyOtp } = useAuthActions()
 const step = ref(1)
-const email = ref('budi@perusahaan.co.id')
-const password = ref('password')
+const email = ref('')
+const password = ref('')
 const otp = ref('')
 const debugOtp = ref('')
 const error = ref('')
@@ -42,11 +42,13 @@ async function submitOtp() {
     <div v-if="step === 1" class="space-y-5">
       <div>
         <label class="form-label">Email</label>
-        <input v-model="email" type="email" class="input-field mt-1.5" />
+        <input v-model="email" type="email" autocomplete="username" placeholder="nama@perusahaan.co.id"
+          class="input-field mt-1.5" @keyup.enter="submitLogin" />
       </div>
       <div>
         <label class="form-label">Password</label>
-        <input v-model="password" type="password" class="input-field mt-1.5" />
+        <input v-model="password" type="password" autocomplete="current-password" placeholder="Masukkan password"
+          class="input-field mt-1.5" @keyup.enter="submitLogin" />
       </div>
       <button @click="submitLogin" :disabled="loading" class="btn-primary w-full">
         {{ loading ? 'Memproses...' : 'Kirim Kode OTP' }}

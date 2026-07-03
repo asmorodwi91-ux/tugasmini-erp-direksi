@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' })
 const { api } = useApi()
+const { periodeOptions } = usePeriode()
 const periode = ref('2026-01')
 const data = ref<any>(null)
 const loading = ref(true)
@@ -13,19 +14,38 @@ async function load() {
 onMounted(load)
 const fmt = (n: number) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
 
-// Data tren & kinerja bersifat ilustratif (belum tersedia dari API /dashboard)
-const trend = {
-  pendapatan: '0,90 60,70 120,75 180,50 240,40 320,25',
-  laba: '0,105 60,95 120,98 180,85 240,80 320,70',
+const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des']
+const labelBulan = (periode: string) => {
+  const [y, m] = (periode || '').split('-')
+  return `${BULAN[Number(m) - 1] ?? m} '${(y || '').slice(2)}`
 }
-const trendMonths = ['Ags', 'Sep', 'Okt', 'Nov', 'Des', 'Jan']
-const deptBars = [
-  { label: 'Dept A', height: 70 },
-  { label: 'Dept B', height: 90 },
-  { label: 'Dept C', height: 55 },
-  { label: 'Dept D', height: 80 },
-  { label: 'Dept E', height: 65 },
-]
+
+// Grafik tren 6 bulan — dibangun dari data real API (/dashboard.tren)
+const trend = computed(() => {
+  const rows: any[] = data.value?.tren ?? []
+  if (!rows.length) return { pendapatan: '', laba: '', months: [] as string[] }
+  const max = Math.max(...rows.map((r) => Number(r.pendapatan)), 1)
+  const n = rows.length
+  const x = (i: number) => (n === 1 ? 160 : (i / (n - 1)) * 320)
+  const y = (v: number) => 110 - (Number(v) / max) * 100
+  return {
+    pendapatan: rows.map((r, i) => `${x(i)},${y(r.pendapatan)}`).join(' '),
+    laba: rows.map((r, i) => `${x(i)},${y(r.laba)}`).join(' '),
+    months: rows.map((r) => labelBulan(r.periode)),
+  }
+})
+
+// Grafik kinerja per departemen — nama & nilai real dari API (/dashboard.kinerja)
+const deptBars = computed(() => {
+  const rows: any[] = data.value?.kinerja ?? []
+  if (!rows.length) return [] as { label: string; height: number; persen: number }[]
+  const max = Math.max(...rows.map((r) => Number(r.aktual)), 1)
+  return rows.map((r) => ({
+    label: r.nama,
+    persen: Number(r.persen),
+    height: Math.round((Number(r.aktual) / max) * 100),
+  }))
+})
 </script>
 <template>
   <div>
@@ -37,8 +57,7 @@ const deptBars = [
     <div class="page-header">
       <h1 class="page-title">Ringkasan Eksekutif</h1>
       <select v-model="periode" @change="load" class="select-field">
-        <option value="2026-01">Periode: Jan 2026</option>
-        <option value="2026-06">Periode: Jun 2026</option>
+        <option v-for="p in periodeOptions" :key="p.value" :value="p.value">Periode: {{ p.label }}</option>
       </select>
     </div>
 
@@ -68,25 +87,28 @@ const deptBars = [
               </span>
             </div>
           </div>
-          <svg class="w-full h-32" viewBox="0 0 320 120" preserveAspectRatio="none">
+          <svg v-if="trend.months.length" class="w-full h-32" viewBox="0 0 320 120" preserveAspectRatio="none">
             <polyline :points="trend.pendapatan" fill="none" stroke="#1F4E79" stroke-width="3"
               stroke-linecap="round" stroke-linejoin="round" />
             <polyline :points="trend.laba" fill="none" stroke="#6C9BD1" stroke-width="3"
               stroke-linecap="round" stroke-linejoin="round" />
           </svg>
+          <div v-else class="h-32 flex items-center justify-center text-sm text-grey">Data tren belum tersedia</div>
           <div class="flex justify-between mt-2 text-[11px] text-grey">
-            <span v-for="m in trendMonths" :key="m">{{ m }}</span>
+            <span v-for="m in trend.months" :key="m">{{ m }}</span>
           </div>
         </div>
 
         <div class="card">
           <div class="section-title text-grey mb-3">Kinerja per Departemen</div>
-          <div class="flex items-end gap-3 h-32">
+          <div v-if="deptBars.length" class="flex items-end gap-3 h-32">
             <div v-for="(b, i) in deptBars" :key="b.label"
-              class="flex-1 rounded-t"
+              class="flex-1 rounded-t relative group"
+              :title="`${b.label}: ${b.persen}% dari target`"
               :style="{ height: b.height + '%', background: i % 2 === 1 ? '#6C9BD1' : '#1F4E79' }"></div>
           </div>
-          <div class="flex gap-3 mt-2 text-[11px] text-grey">
+          <div v-else class="h-32 flex items-center justify-center text-sm text-grey">Data kinerja belum tersedia</div>
+          <div v-if="deptBars.length" class="flex gap-3 mt-2 text-[11px] text-grey">
             <span v-for="b in deptBars" :key="b.label" class="flex-1 text-center">{{ b.label }}</span>
           </div>
         </div>

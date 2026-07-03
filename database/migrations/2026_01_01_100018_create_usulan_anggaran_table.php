@@ -15,6 +15,7 @@ return new class extends Migration {
             $t->enum('status', ['menunggu','approved','revisi'])->default('menunggu');
             $t->string('catatan', 255)->nullable();
             $t->dateTime('waktu_putusan')->nullable();
+            $t->dateTime('created_at')->useCurrent();
             $t->foreign('id_dept')->references('id_dept')->on('departemen');
             $t->foreign('diajukan_oleh')->references('id_user')->on('app_user');
             $t->foreign('disetujui_oleh')->references('id_user')->on('app_user');

@@ -10,6 +10,7 @@ export function useAuthActions() {
   const logout = async () => {
     try { await api('/auth/logout', { method: 'POST' }) } catch {}
     auth.logout()
+    await navigateTo('/login', { replace: true })
   }
   return { login, verifyOtp, logout }
 }

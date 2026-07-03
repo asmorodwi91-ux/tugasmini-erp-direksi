@@ -1,16 +1,7 @@
 <script setup lang="ts">
 const auth = useAuthStore()
 const { logout } = useAuthActions()
-const menu = [
-  { to: '/', label: '📊 Dashboard' },
-  { to: '/approval', label: '✅ Approval PO' },
-  { to: '/keuangan', label: '💰 Laporan Keuangan' },
-  { to: '/operasional', label: '📈 Kinerja Operasional' },
-  { to: '/notifikasi', label: '🔔 Notifikasi' },
-  { to: '/hak-akses', label: '🔑 Hak Akses' },
-  { to: '/ekspor', label: '⬇️ Ekspor Laporan' },
-  { to: '/budget', label: '🧮 Review Anggaran' },
-]
+const { menuTampil } = useAccess()
 </script>
 <template>
   <div class="min-h-screen flex">
@@ -19,7 +10,7 @@ const menu = [
         <div class="sidebar-logo">🏢</div>
         <span class="font-display font-extrabold text-primary-dark">Mini ERP</span>
       </div>
-      <NuxtLink v-for="m in menu" :key="m.to" :to="m.to"
+      <NuxtLink v-for="m in menuTampil" :key="m.to" :to="m.to"
         class="nav-link"
         active-class="nav-link-active">
         {{ m.label }}

@@ -9,6 +9,31 @@ use Illuminate\Http\Request;
 
 class ApprovalController extends Controller
 {
+    // GET /api/po?status=menunggu — daftar PO (default: yang menunggu approval)
+    public function index(Request $request)
+    {
+        $q = PurchaseOrder::with(['supplier', 'departemen'])
+            ->orderByRaw("FIELD(status_po,'menunggu','draft','approved','rejected')")
+            ->orderByDesc('tanggal');
+
+        $status = $request->query('status');
+        if ($status && $status !== 'semua') {
+            $q->where('status_po', $status);
+        }
+
+        return response()->json([
+            'data' => $q->get()->map(fn ($po) => [
+                'id' => $po->no_po,
+                'tanggal' => optional($po->tanggal)->format('Y-m-d'),
+                'supplier' => $po->supplier->nama_supplier ?? null,
+                'departemen' => $po->departemen->nama_dept ?? null,
+                'nilai' => $po->nilai_po,
+                'status' => $po->status_po,
+                'dibuat_oleh' => $po->dibuat_oleh,
+            ]),
+        ]);
+    }
+
     // GET /api/po/{id}
     public function show(string $id)
     {
@@ -19,13 +44,16 @@ class ApprovalController extends Controller
 
         return response()->json([
             'id' => $po->no_po,
+            'tanggal' => optional($po->tanggal)->format('Y-m-d'),
             'supplier' => $po->supplier->nama_supplier ?? null,
             'nilai' => $po->nilai_po,
             'departemen' => $po->departemen->nama_dept ?? null,
             'status' => $po->status_po,
+            'dibuat_oleh' => $po->dibuat_oleh,
             'items' => $po->items->map(fn ($i) => [
                 'nama' => $i->nama_item,
                 'qty' => $i->qty,
+                'harga_satuan' => $i->harga_satuan,
                 'subtotal' => $i->qty * $i->harga_satuan,
             ]),
         ]);
